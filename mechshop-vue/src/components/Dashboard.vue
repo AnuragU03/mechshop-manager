@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import Inventory from './Inventory.vue'
 import Sales from './Sales.vue'
-import Purchases from './Purchases.vue'
 import Customers from './Customers.vue'
 import Reports from './Reports.vue'
 import { getDashboard } from '../api.js'
@@ -67,9 +66,6 @@ onMounted(() => {
           </button>
           <button @click="showSection('sales')" class="w-full text-left p-3 rounded hover:bg-gray-100 flex items-center gap-2">
             <i class="bi bi-cart"></i> Sales
-          </button>
-          <button @click="showSection('purchases')" class="w-full text-left p-3 rounded hover:bg-gray-100 flex items-center gap-2">
-            <i class="bi bi-bag"></i> Purchases
           </button>
           <button @click="showSection('customers')" class="w-full text-left p-3 rounded hover:bg-gray-100 flex items-center gap-2">
             <i class="bi bi-people"></i> Customers
@@ -136,9 +132,6 @@ onMounted(() => {
         </section>
         <section v-show="currentSection === 'sales'">
           <Sales :set-loading="props.setLoading" />
-        </section>
-        <section v-show="currentSection === 'purchases'">
-          <Purchases :set-loading="props.setLoading" />
         </section>
         <section v-show="currentSection === 'customers'">
           <Customers :set-loading="props.setLoading" />

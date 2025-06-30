@@ -93,12 +93,36 @@ app.get('/api/inventory', auth(), async (req, res) => {
   res.json(rows);
 });
 
+function isValidYMD(dateStr) {
+  return typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+}
+
 app.post('/api/inventory', auth('admin'), async (req, res) => {
-  const { name, category, price, stock } = req.body;
+  let {
+    name,
+    category,
+    stock,
+    wholesale_price = 0,
+    sales_price = 0,
+    low_stock_threshold = 10,
+    batch = '',
+    expiry_date = null
+  } = req.body;
+
+  // Ensure all fields are not undefined
+  if (typeof name === 'undefined') name = null;
+  if (typeof category === 'undefined') category = null;
+  if (typeof stock === 'undefined') stock = 0;
+  if (typeof wholesale_price === 'undefined') wholesale_price = 0;
+  if (typeof sales_price === 'undefined') sales_price = 0;
+  if (typeof low_stock_threshold === 'undefined') low_stock_threshold = 10;
+  if (typeof batch === 'undefined') batch = '';
+  if (typeof expiry_date === 'undefined' || !isValidYMD(expiry_date)) expiry_date = null;
+
   const conn = await mysql.createConnection(dbConfig);
   await conn.execute(
-    'INSERT INTO inventory (name, category, price, stock) VALUES (?, ?, ?, ?)',
-    [name, category, price, stock]
+    'INSERT INTO inventory (name, category, stock, wholesale_price, sales_price, low_stock_threshold, batch, expiry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [name, category, stock, wholesale_price, sales_price, low_stock_threshold, batch, expiry_date]
   );
   await logAction(req.user.id, 'create_inventory', `Created inventory item=${name}`);
   await conn.end();
@@ -163,6 +187,15 @@ app.post('/api/sales', auth(), async (req, res) => {
   await logAction(req.user.id, 'create_sale', `Created sale id=${result.insertId}`);
   await conn.end();
   res.json({ success: true, bill_no: result.insertId });
+});
+
+app.delete('/api/sales/:id', auth('admin'), async (req, res) => {
+  const { id } = req.params;
+  const conn = await mysql.createConnection(dbConfig);
+  await conn.execute('DELETE FROM sales WHERE id=?', [id]);
+  await logAction(req.user.id, 'delete_sale', `Deleted sale id=${id}`);
+  await conn.end();
+  res.json({ success: true });
 });
 
 // --- Purchases Endpoints ---
@@ -266,6 +299,15 @@ app.get('/api/audit-log', auth('admin'), async (req, res) => {
 app.post('/api/notify', auth('admin'), async (req, res) => {
   // Integrate with SMS/email API here
   res.json({ success: true, message: 'Notification sent (simulated)' });
+});
+
+app.delete('/api/customers/:membership_no', auth('admin'), async (req, res) => {
+  const { membership_no } = req.params;
+  const conn = await mysql.createConnection(dbConfig);
+  await conn.execute('DELETE FROM customers WHERE membership_no=?', [membership_no]);
+  await logAction(req.user.id, 'delete_customer', `Deleted customer id=${membership_no}`);
+  await conn.end();
+  res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 3001;

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getCustomers, addOrGetCustomer, getCustomerHistory } from '../api.js'
+import { getCustomers, addOrGetCustomer, getCustomerHistory, deleteCustomer } from '../api.js'
 
 const props = defineProps({ setLoading: Function })
 const customers = ref([])
@@ -9,6 +9,7 @@ const newCustomer = ref({ name: '', contact: '', phone: '' })
 const showHistory = ref(false)
 const history = ref([])
 const historyCustomer = ref(null)
+const userRole = localStorage.getItem('role') || 'admin'
 
 async function loadCustomers() {
   props.setLoading(true)
@@ -29,6 +30,15 @@ async function viewHistory(membership_no) {
   history.value = await getCustomerHistory(membership_no)
   historyCustomer.value = customers.value.find(c => c.membership_no === membership_no)
   showHistory.value = true
+}
+
+async function handleDeleteCustomer(membership_no) {
+  if (confirm('Are you sure you want to delete this customer?')) {
+    props.setLoading(true)
+    await deleteCustomer(membership_no)
+    await loadCustomers()
+    props.setLoading(false)
+  }
 }
 
 onMounted(loadCustomers)
@@ -67,6 +77,7 @@ onMounted(loadCustomers)
               <td>{{ customer.phone }}</td>
               <td>
                 <button @click="viewHistory(customer.membership_no)" class="text-blue-600 hover:text-blue-800">History</button>
+                <button v-if="userRole === 'admin'" @click="handleDeleteCustomer(customer.membership_no)" class="text-red-600 hover:text-red-800 ml-2">Delete</button>
               </td>
             </tr>
             <tr v-if="customers.length === 0">

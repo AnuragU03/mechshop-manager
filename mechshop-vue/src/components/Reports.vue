@@ -36,11 +36,11 @@ onMounted(loadReports)
         <p class="text-2xl font-bold">₹{{ reports.total_sales }}</p>
       </div>
       <div class="bg-white p-6 rounded-lg shadow-sm">
-        <h3 class="text-gray-500 text-sm">Total Purchases</h3>
+        <h3 class="text-gray-500 text-sm">Total Purchases (Company)</h3>
         <p class="text-2xl font-bold">₹{{ reports.total_purchases }}</p>
       </div>
       <div class="bg-white p-6 rounded-lg shadow-sm">
-        <h3 class="text-gray-500 text-sm">Profit</h3>
+        <h3 class="text-gray-500 text-sm">Profit (Company)</h3>
         <p class="text-2xl font-bold">₹{{ reports.profit }}</p>
       </div>
     </div>

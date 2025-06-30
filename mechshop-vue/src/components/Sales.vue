@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getSales, addSale, getInventory, getCustomerByPhone, addOrGetCustomer, getInvoice } from '../api.js'
+import { getSales, addSale, getInventory, getCustomerByPhone, addOrGetCustomer, getInvoice, deleteSale } from '../api.js'
 
 const props = defineProps({ setLoading: Function })
 const sales = ref([])
@@ -12,6 +12,7 @@ const newSale = ref({ items: '', quantity: 1, rate: 0, total: 0 })
 const customerNotFound = ref(false)
 const showInvoice = ref(false)
 const invoice = ref(null)
+const userRole = localStorage.getItem('role') || 'admin'
 
 async function loadSales() {
   props.setLoading(true)
@@ -68,6 +69,15 @@ async function viewInvoice(saleId) {
   showInvoice.value = true
 }
 
+async function handleDeleteSale(id) {
+  if (confirm('Are you sure you want to delete this sale?')) {
+    props.setLoading(true)
+    await deleteSale(id)
+    await loadSales()
+    props.setLoading(false)
+  }
+}
+
 onMounted(() => {
   loadSales()
   loadInventory()
@@ -110,6 +120,7 @@ onMounted(() => {
               <th class="text-left py-2">Total</th>
               <th class="text-left py-2">Date</th>
               <th class="text-left py-2">Invoice</th>
+              <th class="text-left py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -124,6 +135,7 @@ onMounted(() => {
               <td>{{ sale.date }}</td>
               <td>
                 <button @click="viewInvoice(sale.id)" class="text-blue-600 hover:text-blue-800">Invoice</button>
+                <button v-if="userRole === 'admin'" @click="handleDeleteSale(sale.id)" class="text-red-600 hover:text-red-800 ml-2">Delete</button>
               </td>
             </tr>
             <tr v-if="sales.length === 0">
@@ -139,8 +151,8 @@ onMounted(() => {
           <h3 class="text-xl font-bold mb-4">Invoice</h3>
           <div v-if="invoice">
             <div>Bill No: #{{ invoice.sale.id }}</div>
-            <div>Customer: {{ invoice.customer.name }}</div>
-            <div>Phone: {{ invoice.customer.phone }}</div>
+            <div>Customer: {{ invoice.customer ? invoice.customer.name : 'Deleted Customer' }}</div>
+            <div>Phone: {{ invoice.customer ? invoice.customer.phone : 'N/A' }}</div>
             <div>Date: {{ invoice.sale.date }}</div>
             <div>Item: {{ invoice.sale.items }}</div>
             <div>Qty: {{ invoice.sale.quantity }}</div>
