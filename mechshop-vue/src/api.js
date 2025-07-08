@@ -103,16 +103,23 @@ export async function getCustomers() {
   const res = await fetch(`${API_URL}/customers`, { headers: authHeaders() });
   return await res.json();
 }
-export async function getCustomerByPhone(phone) {
-  const res = await fetch(`${API_URL}/customers/phone/${phone}`, { headers: authHeaders() });
-  if (res.ok) return await res.json();
-  return null;
+export async function getCustomerByContact(contact) {
+  const res = await fetch(`${API_URL}/customers/contact/${contact}`, { headers: authHeaders() });
+  return await res.json();
 }
+
+export async function getCustomerById(id) {
+  const res = await fetch(`${API_URL}/customers/${id}`, { headers: authHeaders() });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
 export async function addOrGetCustomer(customer) {
+  const { name, contact } = customer;
   const res = await fetch(`${API_URL}/customers`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify(customer)
+    body: JSON.stringify({ name, contact })
   });
   return await res.json();
 }

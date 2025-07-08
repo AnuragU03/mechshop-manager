@@ -46,9 +46,25 @@ function cancelEdit() {
   editId.value = null
   editPart.value = {}
 }
+function formatDateForBackend(date) {
+  if (!date) return null;
+  // If it's already in YYYY-MM-DD format, return as is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  // If it's a Date object or ISO string, format it
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null; // Invalid date
+  return d.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
 async function saveEdit() {
   props.setLoading(true)
-  await updateInventory(editId.value, editPart.value)
+  // Prepare the updated part with proper formatting
+  const updatedPart = {
+    ...editPart.value,
+    low_stock_threshold: Number(editPart.value.low_stock_threshold),
+    expiry_date: formatDateForBackend(editPart.value.expiry_date)
+  }
+  await updateInventory(editId.value, updatedPart)
   await loadInventory()
   cancelEdit()
   props.setLoading(false)

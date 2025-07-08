@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "easyinvoice": "^3.0.47",
     "express": "^5.1.0",
+    "jspdf": "^3.0.1",
     "mysql2": "^3.14.1",
     "vue": "^3.5.17"
   },
