@@ -48,7 +48,12 @@ export async function getInventory() {
   return await res.json();
 }
 export async function addInventory(part) {
-  // Not used directly, inventory is updated via purchases
+  const res = await fetch(`${API_URL}/inventory`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(part)
+  });
+  return await res.json();
 }
 export async function updateInventory(id, part) {
   const res = await fetch(`${API_URL}/inventory/${id}`, {

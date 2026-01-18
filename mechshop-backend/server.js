@@ -42,6 +42,11 @@ async function logAction(user_id, action, details) {
   await conn.end();
 }
 
+// --- Safe helper for all DB writes ---
+function safe(val) {
+  return val === undefined ? null : val;
+}
+
 // --- Auth Endpoints ---
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
@@ -94,11 +99,19 @@ app.get('/api/inventory', auth(), async (req, res) => {
 });
 
 app.post('/api/inventory', auth('admin'), async (req, res) => {
-  const { name, category, price, stock } = req.body;
+  const {
+    name, category, stock,
+    wholesale_price, sales_price,
+    low_stock_threshold, batch, expiry_date
+  } = req.body;
   const conn = await mysql.createConnection(dbConfig);
   await conn.execute(
-    'INSERT INTO inventory (name, category, price, stock) VALUES (?, ?, ?, ?)',
-    [name, category, price, stock]
+    'INSERT INTO inventory (name, category, stock, wholesale_price, sales_price, low_stock_threshold, batch, expiry_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [
+      safe(name), safe(category), safe(stock),
+      safe(wholesale_price), safe(sales_price),
+      safe(low_stock_threshold), safe(batch), safe(expiry_date)
+    ]
   );
   await logAction(req.user.id, 'create_inventory', `Created inventory item=${name}`);
   await conn.end();
@@ -111,7 +124,12 @@ app.put('/api/inventory/:id', auth('admin'), async (req, res) => {
   const conn = await mysql.createConnection(dbConfig);
   await conn.execute(
     'UPDATE inventory SET name=?, category=?, stock=?, wholesale_price=?, sales_price=?, low_stock_threshold=?, batch=?, expiry_date=? WHERE id=?',
-    [name, category, stock, wholesale_price, sales_price, low_stock_threshold, batch, expiry_date, id]
+    [
+      safe(name), safe(category), safe(stock),
+      safe(wholesale_price), safe(sales_price),
+      safe(low_stock_threshold), safe(batch), safe(expiry_date),
+      safe(id)
+    ]
   );
   await logAction(req.user.id, 'update_inventory', `Updated inventory id=${id}`);
   await conn.end();
@@ -148,11 +166,11 @@ app.post('/api/sales', auth(), async (req, res) => {
   quantity = quantity ?? 0;
   const total = rate * quantity;
   // Ensure no undefined values
-  const safeMembershipNo = membership_no ?? null;
-  const safeItems = items ?? null;
-  const safeQuantity = quantity ?? 0;
-  const safeRate = rate ?? 0;
-  const safeTotal = total ?? 0;
+  const safeMembershipNo = safe(membership_no);
+  const safeItems = safe(items);
+  const safeQuantity = safe(quantity);
+  const safeRate = safe(rate);
+  const safeTotal = safe(total);
   // Insert sale
   const [result] = await conn.execute(
     'INSERT INTO sales (customer, items, quantity, rate, total, date) VALUES (?, ?, ?, ?, ?, CURDATE())',
@@ -179,16 +197,17 @@ app.post('/api/purchases', auth(), async (req, res) => {
   // Insert purchase
   await conn.execute(
     'INSERT INTO purchases (supplier, items, quantity, date_of_purchase, wholesale_amount, sales_price) VALUES (?, ?, ?, ?, ?, ?)',
-    [supplier, items, quantity, date_of_purchase, wholesale_amount, sales_price]
+    [safe(supplier), safe(items), safe(quantity), safe(date_of_purchase), safe(wholesale_amount), safe(sales_price)]
   );
   // Update inventory: increase stock, update prices
   const [inv] = await conn.execute('SELECT * FROM inventory WHERE name=?', [items]);
   if (inv.length > 0) {
-    await conn.execute('UPDATE inventory SET stock = stock + ?, wholesale_price=?, sales_price=? WHERE name=?', [quantity, wholesale_amount, sales_price, items]);
+    await conn.execute('UPDATE inventory SET stock = stock + ?, wholesale_price=?, sales_price=? WHERE name=?', [safe(quantity), safe(wholesale_amount), safe(sales_price), safe(items)]);
   } else {
-    await conn.execute('INSERT INTO inventory (name, category, stock, wholesale_price, sales_price) VALUES (?, ?, ?, ?, ?)', [items, '', quantity, wholesale_amount, sales_price]);
+    await conn.execute('INSERT INTO inventory (name, category, stock, wholesale_price, sales_price) VALUES (?, ?, ?, ?, ?)', [safe(items), '', safe(quantity), safe(wholesale_amount), safe(sales_price)]);
   }
-  await logAction(req.user.id, 'create_purchase', `Created purchase id=${result.insertId}`);
+  // Note: result.insertId is not used for logAction here, but could be added if needed
+  await logAction(req.user.id, 'create_purchase', `Created purchase`);
   await conn.end();
   res.json({ success: true });
 });
@@ -218,14 +237,14 @@ app.get('/api/customers/phone/:phone', auth(), async (req, res) => {
 app.post('/api/customers', auth(), async (req, res) => {
   const { name, contact, phone } = req.body;
   const conn = await mysql.createConnection(dbConfig);
-  const [rows] = await conn.execute('SELECT * FROM customers WHERE phone = ?', [phone]);
+  const [rows] = await conn.execute('SELECT * FROM customers WHERE phone = ?', [safe(phone)]);
   if (rows.length > 0) {
     await conn.end();
     return res.json(rows[0]);
   }
   const [result] = await conn.execute(
     'INSERT INTO customers (name, contact, phone) VALUES (?, ?, ?)',
-    [name, contact, phone]
+    [safe(name), safe(contact), safe(phone)]
   );
   const [newCustomer] = await conn.execute('SELECT * FROM customers WHERE membership_no = ?', [result.insertId]);
   await logAction(req.user.id, 'create_customer', `Created customer id=${result.insertId}`);

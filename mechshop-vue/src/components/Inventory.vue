@@ -32,7 +32,18 @@ function hideAddPartModal() {
 
 async function handleAddPart(newPart) {
   props.setLoading(true)
-  await addInventory(newPart)
+  // Ensure all required fields for backend
+  const part = {
+    name: newPart.name,
+    category: newPart.category,
+    stock: newPart.stock,
+    wholesale_price: newPart.price || 0, // Use price as wholesale_price
+    sales_price: newPart.price || 0,     // Use price as sales_price
+    low_stock_threshold: 10,             // Default threshold
+    batch: '',                           // Default empty
+    expiry_date: null                    // Default null
+  }
+  await addInventory(part)
   await loadInventory()
   hideAddPartModal()
   props.setLoading(false)
