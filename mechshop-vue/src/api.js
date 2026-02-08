@@ -51,7 +51,16 @@ export async function addInventory(part) {
   const res = await fetch(`${API_URL}/inventory`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify(part)
+    body: JSON.stringify({
+      name: part.name,
+      category: part.category,
+      stock: part.stock,
+      wholesale_price: part.wholesale_price,
+      sales_price: part.sales_price,
+      low_stock_threshold: part.low_stock_threshold,
+      batch: part.batch,
+      expiry_date: part.expiry_date
+    })
   });
   return await res.json();
 }
@@ -64,7 +73,11 @@ export async function updateInventory(id, part) {
   return await res.json();
 }
 export async function deleteInventory(id) {
-  // Not used directly, inventory is updated via purchases
+  const res = await fetch(`${API_URL}/inventory/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  return await res.json();
 }
 
 // Sales
@@ -85,40 +98,40 @@ export async function getInvoice(saleId) {
   return await res.json();
 }
 
-// Purchases
-export async function getPurchases() {
-  const res = await fetch(`${API_URL}/purchases`, { headers: authHeaders() });
-  return await res.json();
-}
-export async function addPurchase(purchase) {
-  const res = await fetch(`${API_URL}/purchases`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(purchase)
-  });
-  return await res.json();
-}
-
 // Customers
 export async function getCustomers() {
   const res = await fetch(`${API_URL}/customers`, { headers: authHeaders() });
   return await res.json();
 }
-export async function getCustomerByPhone(phone) {
-  const res = await fetch(`${API_URL}/customers/phone/${phone}`, { headers: authHeaders() });
-  if (res.ok) return await res.json();
-  return null;
+export async function getCustomerByContact(contact) {
+  const res = await fetch(`${API_URL}/customers/contact/${contact}`, { headers: authHeaders() });
+  return await res.json();
 }
+
+export async function getCustomerById(id) {
+  const res = await fetch(`${API_URL}/customers/${id}`, { headers: authHeaders() });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
 export async function addOrGetCustomer(customer) {
+  const { name, contact } = customer;
   const res = await fetch(`${API_URL}/customers`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify(customer)
+    body: JSON.stringify({ name, contact })
   });
   return await res.json();
 }
 export async function getCustomerHistory(membership_no) {
   const res = await fetch(`${API_URL}/customers/${membership_no}/history`, { headers: authHeaders() });
+  return await res.json();
+}
+export async function deleteCustomer(membership_no) {
+  const res = await fetch(`${API_URL}/customers/${membership_no}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
   return await res.json();
 }
 
@@ -153,4 +166,11 @@ export async function sendNotification(data) {
   return await res.json();
 }
 
-// Add similar functions for sales, purchases, customers, suppliers as needed 
+// Add similar functions for sales, purchases, customers, suppliers as needed
+export async function deleteSale(id) {
+  const res = await fetch(`${API_URL}/sales/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  return await res.json();
+} 
